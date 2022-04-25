@@ -4,10 +4,10 @@ from time import sleep
 import numpy as np
 
 sensors = []
-sensors.append(Ultrasonic_Sensor(18,16))
-sensors.append(Ultrasonic_Sensor(22,16))
-sensors.append(Ultrasonic_Sensor(24,16))
-sensors.append(Ultrasonic_Sensor(26,16))
+sensors.append(Ultrasonic_Sensor(18,7))
+sensors.append(Ultrasonic_Sensor(22,11))
+sensors.append(Ultrasonic_Sensor(24,13))
+sensors.append(Ultrasonic_Sensor(26,15))
 
 
 for i in range(len(sensors)):
@@ -15,16 +15,23 @@ for i in range(len(sensors)):
     
     
 
+
 Observation_Vector = np.zeros(1000)
 
 def ultrasonic_sensor():
     while(1):
         
         for i in range(len(sensors)):
+            
             Observation_Vector[i] = sensors[i].measure()
-            sleep(0.25)
-            print(f"Sensor {i+1}: {Observation_Vector[i]}")
-        
+            if(Observation_Vector[i]>=400):
+                Observation_Vector[i] = 400
+            
+            
+            
+        print(f"Sensor 1: {Observation_Vector[0]}\nSensor 2: {Observation_Vector[1]}\nSensor 3: {Observation_Vector[2]}\nSensor 4: {Observation_Vector[3]}")
+        print("__________________________________")
+
 def thermal_camera():
     pass
 def motor_control():
