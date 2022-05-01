@@ -11,12 +11,13 @@ class Ultrasonic_Sensor:
     
     
     
-    def __init__(self, pin, trigger):
+    def __init__(self, pin, trigger, average_terms):
         self.pin = pin
         self.trigger = trigger
         self.edge_count = 0
         self.timer_value1 = 0
         self.timer_value2  = 0
+        self.average_terms = average_terms
     
     def setup(self):
         print(f"setup ultrasonic sensor on pin {self.pin}")
@@ -30,15 +31,25 @@ class Ultrasonic_Sensor:
     
     def measure(self):
         
-        average_array = np.zeros(5)
-        
+        average_array = np.zeros(self.average_terms)
+        print(f"Measure {self.pin}")
         for i in range(len(average_array)):
             Ultrasonic_Sensor.pulse(self)
+            
             while(gpio.input(self.pin)==0):
+                
                 self.timer_value2 = time.time()
+                
+                if(self.timer_value2+500<=time.time()):
+                   break
+              
             while(gpio.input(self.pin)==1):
-                self.timer_value1 = time.time()  
+                print(f"Hit {gpio.input(self.pin)}")
+                self.timer_value1 = time.time()
+                if(self.timer_value1+500<=time.time()):
+                   break
             self.timer_value_1 = time.time()
+            
             
             pulse = (self.timer_value1 - self.timer_value2)
             
@@ -47,7 +58,7 @@ class Ultrasonic_Sensor:
             
             average_array[i] = distance
             
-        
+        print(" End Measure")
         
         
         return sum(average_array)/len(average_array) *100
@@ -58,7 +69,7 @@ class Ultrasonic_Sensor:
         gpio.output(self.trigger, gpio.HIGH)
         sleep(15E-6)
         gpio.output(self.trigger, gpio.LOW)
-        
+        #print("pulse")
     
     
     
