@@ -7,7 +7,7 @@ import time
 
 # Driver Board pins to Raspberry Pi 4 pins
 in1 = 16
-in2 = 20
+in2 = 18
 in3 = 19
 in4 = 26
 
