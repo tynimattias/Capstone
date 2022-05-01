@@ -36,18 +36,19 @@ class Ultrasonic_Sensor:
         for i in range(len(average_array)):
             Ultrasonic_Sensor.pulse(self)
             
+            initial_timeout_time = time.time()
             while(gpio.input(self.pin)==0):
-                
                 self.timer_value2 = time.time()
-                
-                if(self.timer_value2+500<=time.time()):
-                   break
-              
+                if(initial_timeout_time+500<=time.time()):
+                    print(f"timer for echo on pin {self.pin} timed out!")
+                    break
+
+            initial_timeout_time = time.time()
             while(gpio.input(self.pin)==1):
-                print(f"Hit {gpio.input(self.pin)}")
                 self.timer_value1 = time.time()
-                if(self.timer_value1+500<=time.time()):
-                   break
+                if(initial_timeout_time+500<=time.time()):
+                    print(f"timer for echo on pin {self.pin} timed out!")
+                    break
             self.timer_value_1 = time.time()
             
             
