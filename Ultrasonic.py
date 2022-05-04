@@ -2,7 +2,7 @@ import numpy as np
 import time
 from time import sleep
 import RPi.GPIO as gpio
-
+import os
 
 
 
@@ -11,8 +11,8 @@ class Ultrasonic_Sensor:
     
     
     
-    def __init__(self, pin, trigger, average_terms):
-        self.pin = pin
+    def __init__(self, echo, trigger, average_terms):
+        self.echo = echo
         self.trigger = trigger
         self.edge_count = 0
         self.timer_value1 = 0
@@ -20,36 +20,45 @@ class Ultrasonic_Sensor:
         self.average_terms = average_terms
     
     def setup(self):
-        print(f"setup ultrasonic sensor on pin {self.pin}")
+        print(f"setup ultrasonic sensor on echo {self.echo}")
         if(gpio.getmode()== None):
-            gpio.setmode(gpio.BOARD)
+            gpio.setmode(gpio.BCM)
             print("set mode to BOARD")
             
-        gpio.setup(self.pin, gpio.IN)
+        gpio.setup(self.echo, gpio.IN)
         gpio.setup(self.trigger, gpio.OUT)
-        print(f"Trigger setup on pin {self.trigger}")
+        print(f"Trigger setup on echo {self.trigger}")
     
     def measure(self):
         
         average_array = np.zeros(self.average_terms)
-        print(f"Measure {self.pin}")
+        #print(f"Measure {self.echo}")
         for i in range(len(average_array)):
             Ultrasonic_Sensor.pulse(self)
             
             initial_timeout_time = time.time()
-            while(gpio.input(self.pin)==0):
+            while(gpio.input(self.echo)==0):
                 self.timer_value2 = time.time()
-                if(initial_timeout_time+500<=time.time()):
-                    print(f"timer for echo on pin {self.pin} timed out!")
+                #print("hit")
+                if(initial_timeout_time+1<=time.time()):
+                    print(f"timer for echo on echo {self.echo} timed out!")
+                    
                     break
+                    
 
             initial_timeout_time = time.time()
-            while(gpio.input(self.pin)==1):
+            while(gpio.input(self.echo)==1):
+                #print(gpio.input(self.echo))
+                #print(self.echo)
                 self.timer_value1 = time.time()
-                if(initial_timeout_time+500<=time.time()):
-                    print(f"timer for echo on pin {self.pin} timed out!")
+                if(initial_timeout_time+1<=time.time()):
+                    print(f"timer for echo on echo {self.echo} timed out!")
+                    
+                    
                     break
-            self.timer_value_1 = time.time()
+                    
+                    
+           
             
             
             pulse = (self.timer_value1 - self.timer_value2)
@@ -59,7 +68,7 @@ class Ultrasonic_Sensor:
             
             average_array[i] = distance
             
-        print(" End Measure")
+        #print(" End Measure")
         
         
         return sum(average_array)/len(average_array) *100
@@ -75,5 +84,5 @@ class Ultrasonic_Sensor:
     
     
     def __del__(self):
-        print(F"Sensor on pin{self.pin} was removed!")
+        print(F"Sensor on echo{self.echo} was removed!")
         

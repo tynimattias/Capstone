@@ -1,5 +1,6 @@
 
 import RPi.GPIO as gpio
+import time
 
 class Motor():
     
@@ -18,44 +19,51 @@ class Motor():
         motor_inputs = [self.in1,self.in2,self.in3,self.in4]
         
         gpio.setup(motor_inputs,gpio.OUT)
+        gpio.output(motor_inputs, gpio.LOW)
         
-    def Forward(self, time = 0.88):
+    def Forward(self, tm = 0.88):
         print('Forward')
         gpio.output(self.in1,gpio.HIGH)
         gpio.output(self.in2,gpio.LOW)
         gpio.output(self.in3,gpio.HIGH)
         gpio.output(self.in4,gpio.LOW)
-        time.sleep(time)
+        time.sleep(tm)
         print('Forward Complete')
 
-    def Backward(self, time = 0.98):
+    def Backward(self, tm = 0.98):
         print("Backward")
-        gpio.output(in1,gpio.LOW)
-        gpio.output(in2,gpio.HIGH)
-        gpio.output(in3,gpio.LOW)
-        gpio.output(in4,gpio.HIGH)
-        time.sleep(time)
+        gpio.output(self.in1,gpio.LOW)
+        gpio.output(self.in2,gpio.HIGH)
+        gpio.output(self.in3,gpio.LOW)
+        gpio.output(self.in4,gpio.HIGH)
+        time.sleep(tm)
         print('Backward Complete')
         
-    def Left(self, time = 0.85, fwd_time = 0.88):
+    def Left(self, tm = 0.85, fwd_time = 0.88):
         print("Turning Left")
-        gpio.output(in1,gpio.HIGH)
-        gpio.output(in2,gpio.LOW)
-        gpio.output(in3,gpio.LOW)
-        gpio.output(in4,gpio.HIGH)
+        gpio.output(self.in1,gpio.HIGH)
+        gpio.output(self.in2,gpio.LOW)
+        gpio.output(self.in3,gpio.LOW)
+        gpio.output(self.in4,gpio.HIGH)
         print('Left Complete')
-        time.sleep(time)
-        Motor.Forward(self, time = fwd_time)
+        time.sleep(tm)
+        Motor.Forward(self, tm = fwd_time)
 
-    def Right(self, time = 0.80, fwd_time = 0.88):
+    def Right(self, tm = 0.80, fwd_time = 0.88):
         print("Turing Right")
         gpio.output(self.in1,gpio.LOW)
         gpio.output(self.in2,gpio.HIGH)
         gpio.output(self.in3,gpio.HIGH)
         gpio.output(self.in4,gpio.LOW)
         print('Right Complete')
-        time.sleep(time)
-        Motor.Forward(self, time = fwd_time)
+        time.sleep(tm)
+        Motor.Forward(self, tm = fwd_time)
+    def Stop(self):
+        gpio.output(self.in1,gpio.LOW)
+        gpio.output(self.in2,gpio.LOW)
+        gpio.output(self.in3,gpio.LOW)
+        gpio.output(self.in4,gpio.LOW)
+        print("Stop?")
 
 
 
