@@ -26,7 +26,7 @@ client = mqtt.Client(client_id="Rp4")
 def on_connect(client, userdata, flags, rc):
     print(f"Connected with code {rc}")
     
-    client.subscribe("HeatSeekingCar/Observation")
+    
     client.subscribe("HeatSeekingCar/Direction")
     client.subscribe("HeatSeekingCar/Request")
 
@@ -36,7 +36,7 @@ def on_message(client, userdata, msg):
     global direction, request
     
     try:
-        if msg.topic == "HeatSeekinCar/Direction":
+        if msg.topic == "HeatSeekingCar/Direction":
             direction = int(msg.payload)
         if msg.topic == "HeatSeekingCar/Request":
             request = int(msg.payload)
@@ -118,7 +118,7 @@ def ultrasonic_sensor():
         
         lock.release()
                 
-        print(f"Sensor 1: {Observation_Vector[0]}\nSensor 2: {Observation_Vector[1]}\nSensor 3: {Observation_Vector[2]}\nSensor 4: {Observation_Vector[3]}")
+        print(f"Forward: {Observation_Vector[0]}\nRight: {Observation_Vector[1]}\nBack: {Observation_Vector[2]}\nLeft: {Observation_Vector[3]}")
         print("__________________________________")
             
             
@@ -137,6 +137,37 @@ def thermal_camera():
             continue
         #Store values into observation vector
         Observation_Vector[4:len(frame)+4] = frame
+        
+        for h in range(24):
+            for w in range(32):
+                t = frame[h * 32 + w]
+                
+                c = "&"
+                # pylint: disable=multiple-statements
+                if t < 20:
+                    c = " "
+                elif t < 23:
+                    c = "."
+                elif t < 25:
+                    c = "-"
+                elif t < 27:
+                    c = "*"
+                elif t < 29:
+                    c = "+"
+                elif t < 31:
+                    c = "x"
+                elif t < 33:
+                    c = "%"
+                elif t < 35:
+                    c = "#"
+                elif t < 37:
+                    c = "X"
+                # pylint: enable=multiple-statements
+                print(c, end="")
+            print()
+        print()
+        
+        
 #         print(Observation_Vector)
 
 
@@ -149,38 +180,44 @@ def motor_control():
         #Reset to -1 so we don't get continuous travel
         #(example, direction stays at 2, will continue to make trigger motor because the condition remains true)
         
-        while(direction-1):
-            for i in a:
-                direction = i
-                print(direction)
-                if(direction+1):
-                    if(direction==0):
-                        motor.Forward()
-                        motor.Stop()
-                    
-                    elif(direction==1):
-                        motor.Right()
-                        motor.Stop()
-                        
-                        
-                    elif(direction==2):
-                        motor.Backward()
-                        motor.Stop()
-                        
-                    elif(direction==3):
-                        motor.Left()
-                        motor.Stop()
-                        
-                    elif(direction==4):
-                        motor.Stop()
-                        
-                    else:
-                        print('No direction recieved, Error?')
-                    
-                    direction = -1
-                else:
-                    #if no command is avaliable, sleep for 0.5 sec to allow other tasks to work
-                    sleep(0.5)
+       
+        
+            
+        print(direction)
+        if(direction+1):
+            if(direction==0):
+                
+                motor.Forward()
+                motor.Stop()
+            
+            elif(direction==1):
+                
+                motor.Right()
+                motor.Forward()
+                motor.Stop()
+                
+                
+            elif(direction==2):
+                
+                motor.Backward()
+                motor.Stop()
+                
+            elif(direction==3):
+                
+                motor.Left()
+                motor.Forward()
+                motor.Stop()
+                
+            elif(direction==4):
+                motor.Stop()
+                
+            else:
+                print('No direction recieved, Error?')
+            
+            direction = -1
+        else:
+            #if no command is avaliable, sleep for 0.5 sec to allow other tasks to work
+            sleep(0.5)
                 
 
 def transmitter():
@@ -191,7 +228,7 @@ def transmitter():
         if(request):
             print("Data Requested")
             publish.single("HeatSeekingCar/Observation_Vector", str(Observation_Vector), hostname = broker)
-            print("data published")
+            
             request = 0
     
             
@@ -205,5 +242,5 @@ t4 = threading.Thread(target = transmitter)
 
 t1.start()
 t2.start()
-#t3.start()
+t3.start()
 t4.start()

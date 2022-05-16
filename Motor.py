@@ -13,7 +13,7 @@ class Motor():
         
     def setup(self):
         if(gpio.getmode()== None):
-            gpio.setmode(gpio.BOARD)
+            gpio.setmode(gpio.BCM)
             print("set mode to BOARD")
         
         motor_inputs = [self.in1,self.in2,self.in3,self.in4]
@@ -21,7 +21,7 @@ class Motor():
         gpio.setup(motor_inputs,gpio.OUT)
         gpio.output(motor_inputs, gpio.LOW)
         
-    def Forward(self, tm = 0.88):
+    def Forward(self, tm = 1.8):
         print('Forward')
         gpio.output(self.in1,gpio.HIGH)
         gpio.output(self.in2,gpio.LOW)
@@ -30,7 +30,7 @@ class Motor():
         time.sleep(tm)
         print('Forward Complete')
 
-    def Backward(self, tm = 0.98):
+    def Backward(self, tm = 1.8):
         print("Backward")
         gpio.output(self.in1,gpio.LOW)
         gpio.output(self.in2,gpio.HIGH)
@@ -39,7 +39,7 @@ class Motor():
         time.sleep(tm)
         print('Backward Complete')
         
-    def Left(self, tm = 0.85, fwd_time = 0.88):
+    def Left(self, tm = 1.6):
         print("Turning Left")
         gpio.output(self.in1,gpio.HIGH)
         gpio.output(self.in2,gpio.LOW)
@@ -47,9 +47,9 @@ class Motor():
         gpio.output(self.in4,gpio.HIGH)
         print('Left Complete')
         time.sleep(tm)
-        Motor.Forward(self, tm = fwd_time)
+        
 
-    def Right(self, tm = 0.80, fwd_time = 0.88):
+    def Right(self, tm = 1.6):
         print("Turing Right")
         gpio.output(self.in1,gpio.LOW)
         gpio.output(self.in2,gpio.HIGH)
@@ -57,7 +57,6 @@ class Motor():
         gpio.output(self.in4,gpio.LOW)
         print('Right Complete')
         time.sleep(tm)
-        Motor.Forward(self, tm = fwd_time)
     def Stop(self):
         gpio.output(self.in1,gpio.LOW)
         gpio.output(self.in2,gpio.LOW)
@@ -66,5 +65,45 @@ class Motor():
         print("Stop?")
 
 
-
+if __name__ == "__main__":
+    
+    while(1):
+        motor = Motor(12, 16, 20, 21)
+        motor.setup()
+        
+        direction = int(input('0/1/2/3/4'))
+        ti = float(input('Calibration time'))
+        
+        if(direction==0):
+                
+            motor.Forward(tm = ti)
+            motor.Stop()
+            
+        elif(direction==1):
+            
+            motor.Right(tm = ti)
+            #motor.Forward()
+            motor.Stop()
+            
+            
+        elif(direction==2):
+            
+            motor.Backward(tm = ti)
+            motor.Stop()
+            
+        elif(direction==3):
+            
+            motor.Left(tm = ti)
+            motor.Stop()
+            
+        elif(direction==4):
+            motor.Stop()
+        elif(direction==6):
+            exit()
+            
+        else:
+            print('No direction recieved, Error?')
+        
+        direction = -1
+                    
 
