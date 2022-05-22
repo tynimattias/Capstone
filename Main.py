@@ -1,3 +1,4 @@
+from BN880 import BN880
 from Ultrasonic import Ultrasonic_Sensor
 import RPi.GPIO as gpio
 import threading
@@ -10,7 +11,9 @@ import busio
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
+#Global Variable for under voltage detection
 
+under_voltage = 0
 
 #Global variable for direction, intialized to -1(0 is reserved for Forward)
 direction = -1
@@ -24,7 +27,7 @@ client = mqtt.Client(client_id="Rp4")
 
 #Subscribes to Observation and Direction topics on connection
 def on_connect(client, userdata, flags, rc):
-    print(f"Connected with code {rc}")
+    #print(f"Connected with code {rc}")
     
     
     client.subscribe("HeatSeekingCar/Direction")
@@ -32,7 +35,7 @@ def on_connect(client, userdata, flags, rc):
 
 #When data is recieved, check for direction topic and assign as the direction
 def on_message(client, userdata, msg):
-    print(f"{msg.topic}: {msg.payload}")
+    #print(f"{msg.topic}: {msg.payload}")
     global direction, request
     
     try:
@@ -40,7 +43,7 @@ def on_message(client, userdata, msg):
             direction = int(msg.payload)
         if msg.topic == "HeatSeekingCar/Request":
             request = int(msg.payload)
-            print(f"Request was {request}")
+            #print(f"Request was {request}")
     except ValueError:
         pass
 
@@ -61,10 +64,13 @@ client.loop_start()
 #Is adaptable to include more sensors if desired
 #Just add sensors.append(Ultrasonic_Sensor(ECHO, TRIGGER, Averaging_Terms)
 
+
+#----Change pins to accomadate gps**********************************************
 sensors = []
+#Echo Blue, Trigger Yellow
 sensors.append(Ultrasonic_Sensor(13,6,5)) #North
-sensors.append(Ultrasonic_Sensor(15,18,5)) #East
-sensors.append(Ultrasonic_Sensor(10,9,5)) #south
+sensors.append(Ultrasonic_Sensor(23,24,5)) #East
+sensors.append(Ultrasonic_Sensor(10,11,5)) #south
 sensors.append(Ultrasonic_Sensor(19,26,5)) #West
 
 #MLX90640 Initiation
@@ -80,7 +86,7 @@ mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_4_HZ
 frame = np.zeros(768)
 
 #Create a Motor Object with parameters (In1, In2, In3, In4)
-motor = Motor.Motor(12, 16, 20, 21)
+motor = Motor.Motor(12, 16, 21, 20)
 
 #Will setup appropiate pins to be 
 motor.setup()
@@ -99,27 +105,29 @@ Observation_Vector = np.zeros(774)
 #Task 1: Ultrasonic Sensors
 def ultrasonic_sensor():
     global Observation_Vector
+    
     while(1):
-        
+        global under_voltage
+        previuous_measure = np.zeros(4)
+        if(under_voltage):
+            break
         #For every sensor in the sensor object list,
         #measure the distance from that sensor and 
         #store into observation vector
         lock.acquire()
         for i in range(len(sensors)):
-            
-            
             Observation_Vector[i] = sensors[i].measure()
-        
-#             if(Observation_Vector[i]>=400):
-#                 Observation_Vector[i] = 400
-            if(Observation_Vector[i] < 0):
-                pass
+            if(np.abs(previuous_measure[i]-Observation_Vector[i])>200):
+                while(np.abs(previuous_measure[i]-Observation_Vector[i])>400):
+                    Observation_Vector[i] = sensors[i].measure()
+                    previuous_measure[i] = 400
+            previuous_measure = Observation_Vector[0:4]
             
         
         lock.release()
-                
-        print(f"Forward: {Observation_Vector[0]}\nRight: {Observation_Vector[1]}\nBack: {Observation_Vector[2]}\nLeft: {Observation_Vector[3]}")
-        print("__________________________________")
+        #print(f'Board mode is {gpio.getmode()}')        
+        #print(f"Forward: {Observation_Vector[0]}\nRight: {Observation_Vector[1]}\nBack: {Observation_Vector[2]}\nLeft: {Observation_Vector[3]}")
+        #print("__________________________________")
             
             
         
@@ -130,6 +138,9 @@ def ultrasonic_sensor():
 def thermal_camera():
     while(1):
         global Observation_Vector
+        global under_voltage
+        if(under_voltage):
+            break
         try:
             mlx.getFrame(frame)
         except RuntimeError:
@@ -138,6 +149,22 @@ def thermal_camera():
         #Store values into observation vector
         Observation_Vector[4:len(frame)+4] = frame
         
+        sum_frame = np.sum(frame)
+
+        frame_average = sum_frame/len(frame)
+
+        higher_than_average_array = np.zeros(len(frame))
+
+        for i in range(len(frame)):
+            if(frame[i]>=frame_average):
+                higher_than_average_array[i] = 1
+            else:
+                higher_than_average_array[i] = 0
+
+        percentage = np.sum(higher_than_average_array)/len(frame)
+
+        print(f'Percentage is {percentage*100}%')
+
         for h in range(24):
             for w in range(32):
                 t = frame[h * 32 + w]
@@ -167,8 +194,8 @@ def thermal_camera():
             print()
         print()
         
-        
-#         print(Observation_Vector)
+    
+    
 
 
 #Task 3: Motor Control
@@ -180,10 +207,13 @@ def motor_control():
         #Reset to -1 so we don't get continuous travel
         #(example, direction stays at 2, will continue to make trigger motor because the condition remains true)
         
+        global under_voltage
+        if(under_voltage):
+            break
        
         
             
-        print(direction)
+        #print(direction)
         if(direction+1):
             if(direction==0):
                 
@@ -212,7 +242,8 @@ def motor_control():
                 motor.Stop()
                 
             else:
-                print('No direction recieved, Error?')
+                pass
+                #print('No direction recieved, Error?')
             
             direction = -1
         else:
@@ -223,24 +254,57 @@ def motor_control():
 def transmitter():
     global request
     global Observation_Vector
+    global under_voltage
     while(1):
-        
+        #print(Observation_Vector)
         if(request):
-            print("Data Requested")
+            #print("Data Requested")
             publish.single("HeatSeekingCar/Observation_Vector", str(Observation_Vector), hostname = broker)
             
             request = 0
-    
+
+        if(under_voltage):
+
+            #print("Under_voltage: Car shutting off")
+            publish.single("HeatSeekingCar/Undervoltage", str(1), hostname = broker)
             
-  
+            
+
+
+
+
+
+def low_voltage_detection():
+    global under_voltage
+    gpio.setup(8, gpio.IN)
+    while(True): 
+        under_voltage = gpio.input(8)
+
+
+    
+def gps():
+    global Observation_Vector    
+    gps = BN880(0,0,9600, "$GNGGA", "/dev/serial0")
+    while(1):
+        try:
+            lat, longi= gps.get_position()
+            Observation_Vector[-2] = lat; Observation_Vector[-1] = longi
+
+        except TimeoutError:
+            print('GPS Timed Out!')
+            Observation_Vector[-2] = 3; Observation_Vector[-1] = 2
 
 #Threading declarations
 t1 = threading.Thread(target = ultrasonic_sensor)
 t2 = threading.Thread(target = thermal_camera)
 t3 = threading.Thread(target = motor_control)
 t4 = threading.Thread(target = transmitter)
+t5 = threading.Thread(target = low_voltage_detection)
+t6 = threading.Thread(target= gps)
 
 t1.start()
 t2.start()
 t3.start()
 t4.start()
+#t5.start()
+t6.start()

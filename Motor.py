@@ -21,7 +21,7 @@ class Motor():
         gpio.setup(motor_inputs,gpio.OUT)
         gpio.output(motor_inputs, gpio.LOW)
         
-    def Forward(self, tm = 1.8):
+    def Forward(self, tm = 0.75):
         print('Forward')
         gpio.output(self.in1,gpio.HIGH)
         gpio.output(self.in2,gpio.LOW)
@@ -30,7 +30,7 @@ class Motor():
         time.sleep(tm)
         print('Forward Complete')
 
-    def Backward(self, tm = 1.8):
+    def Backward(self, tm = 0.75):
         print("Backward")
         gpio.output(self.in1,gpio.LOW)
         gpio.output(self.in2,gpio.HIGH)
@@ -39,7 +39,7 @@ class Motor():
         time.sleep(tm)
         print('Backward Complete')
         
-    def Left(self, tm = 1.6):
+    def Left(self, tm = 2.5):
         print("Turning Left")
         gpio.output(self.in1,gpio.HIGH)
         gpio.output(self.in2,gpio.LOW)
@@ -49,7 +49,7 @@ class Motor():
         time.sleep(tm)
         
 
-    def Right(self, tm = 1.6):
+    def Right(self, tm = 2.4):
         print("Turing Right")
         gpio.output(self.in1,gpio.LOW)
         gpio.output(self.in2,gpio.HIGH)
@@ -68,7 +68,7 @@ class Motor():
 if __name__ == "__main__":
     
     while(1):
-        motor = Motor(12, 16, 20, 21)
+        motor = Motor(12, 16, 21, 20)
         motor.setup()
         
         direction = int(input('0/1/2/3/4'))
