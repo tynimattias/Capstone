@@ -36,4 +36,5 @@ Make sure that UART connection is setup on the Raspberry Pi.
 Connect 5v to 5v rail. Connect Ground to Ground. Connect the BN880 Rx pin to the Tx pin on the Raspberry pi, (Board pin 8). Connect BN880 Tx pin to Rx on Raspberry Pi, (Board Pin 10)
 
 
-
+### Questions?
+Contact me at tynimattias@gmail.com
