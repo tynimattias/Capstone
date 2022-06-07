@@ -134,7 +134,7 @@ def ultrasonic_sensor():
 #Task 2: Thermal Camera
 #Simple task using Adafruit's MLX90640 Library
 #mlx.getFrame is used to get a frame from the thermal camera
-#Sometimes values errors WILL happen, just try again
+
 def thermal_camera():
     while(1):
         global Observation_Vector
@@ -144,27 +144,16 @@ def thermal_camera():
         try:
             mlx.getFrame(frame)
         except RuntimeError:
+            #Errors are inevitable, just try again.
+            #If frames contiune to fail, number 1 culpret is not enough power.
             print("Mlx frame aquire fail")
             continue
+            
         #Store values into observation vector
         Observation_Vector[4:len(frame)+4] = frame
         
-        sum_frame = np.sum(frame)
 
-        frame_average = sum_frame/len(frame)
-
-        higher_than_average_array = np.zeros(len(frame))
-
-        for i in range(len(frame)):
-            if(frame[i]>=frame_average):
-                higher_than_average_array[i] = 1
-            else:
-                higher_than_average_array[i] = 0
-
-        percentage = np.sum(higher_than_average_array)/len(frame)
-
-        print(f'Percentage is {percentage*100}%')
-
+        #Debugging, shows output of thermal camera to the terminal
         for h in range(24):
             for w in range(32):
                 t = frame[h * 32 + w]
@@ -211,8 +200,6 @@ def motor_control():
         if(under_voltage):
             break
        
-        
-            
         #print(direction)
         if(direction+1):
             if(direction==0):
@@ -251,6 +238,11 @@ def motor_control():
             sleep(0.5)
                 
 
+#Transmitter Task using MQTT
+# Waits for a request from control center
+# If request recieved, then publish observation vector to server
+# If an undervoltage is detected from the low_voltage_detection task
+# Publish a message to server that the car is low battery
 def transmitter():
     global request
     global Observation_Vector
@@ -271,8 +263,11 @@ def transmitter():
             
 
 
-
-
+         
+# Low Voltage Detection
+# Read pin 8 for a logic signal to inform the Pi that the battery is low
+# This signal comes from a Low Voltage Dectetion circuit which sends a logic signal
+# if the battery is low voltage
 
 def low_voltage_detection():
     global under_voltage
@@ -280,8 +275,8 @@ def low_voltage_detection():
     while(True): 
         under_voltage = gpio.input(8)
 
-
-    
+# GPS Task
+# Reads the BN880 gps and extracts latitude and longitude
 def gps():
     global Observation_Vector    
     gps = BN880(0,0,9600, "$GNGGA", "/dev/serial0")
@@ -290,6 +285,7 @@ def gps():
             lat, longi= gps.get_position()
             Observation_Vector[-2] = lat; Observation_Vector[-1] = longi
 
+            #TimeoutErrors can happen if the gps isn't able to get a signal
         except TimeoutError:
             print('GPS Timed Out!')
             Observation_Vector[-2] = 3; Observation_Vector[-1] = 2
